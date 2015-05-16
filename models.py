@@ -1,8 +1,8 @@
 from flask.ext.sqlalchemy import SQLAlchemy
-from flask import Flask
+from flask import Flask,current_app
 from flask.ext.login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 app = Flask(__name__)
 db = SQLAlchemy(app)
 

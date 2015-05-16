@@ -13,7 +13,7 @@ from werkzeug import secure_filename
 from flask.ext.login import LoginManager, login_user, current_user, login_required
 
 
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+
 from flask.ext.sqlalchemy import SQLAlchemy
 import os
 from models import *
@@ -26,12 +26,13 @@ manager = Manager(app)
 from flask.ext.mail import Message
 app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
 app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <flasky@example.com>'
-def send_email(to, subject, template, **kwargs):
-	msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject,
-	sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
-	msg.body = render_template(template + '.txt', **kwargs)
-	msg.html = render_template(template + '.html', **kwargs)
-	mail.send(msg)
+# def send_email(to, subject, template, **kwargs):
+# 	msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject,
+# 	sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
+# 	msg.body = render_template(template + '.txt', **kwargs)
+# 	msg.html = render_template(template + '.html', **kwargs)
+	
+# 	mail.send(msg)
 
 app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
 app.config['MAIL_PORT'] = 587
@@ -118,10 +119,16 @@ def send_email(to, subject, template, **kwargs):
 	msg = Message(app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject,sender=app.config['FLASKY_MAIL_SENDER'], recipients=[to])
 	msg.body = render_template(template + '.txt', **kwargs)
 	msg.html = render_template(template + '.html', **kwargs)
+
 	thr = Thread(target=send_async_email, args=[app, msg])
-	print msg
+	email_attachment(msg)
+	# print msg
 	thr.start()
 	return thr
+
+def email_attachment(msg =None,email_attachment=None):
+	with app.open_resource("uploads/22kkr.jpg") as fp:
+		msg.attach("22kkr.jpg", "image/jpg", fp.read())
 
 from flask.ext.login import logout_user, login_required
 @app.route('/logout')
@@ -140,11 +147,13 @@ def login():
 		if session:
 			logout_user()
 		user = User.query.filter_by(email=request.form['email']).first()
+
 		print user
 		print 'session3'
 		if user is not None and user.verify_password(request.form['password']):
 			print "its not none"
-
+			token = user.generate_confirmation_token()
+			send_email(user.email, 'Confirm Your Account','confirm', user=user, token=token)
 			login_user(user)
 			
 			return redirect(request.args.get('next') or url_for('json_result'))
