@@ -1,0 +1,52 @@
+<html ng-app="phonecatApp">
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+  
+</head>
+<body ng-controller="PhoneListCtrl">
+
+  <ul>
+    <li ng-repeat="phone in phones">
+      <span>{% raw %}{{phone.name |uppercase }}{% endraw %}</span>
+      <p>{% raw %}{{phone.snippet |orderBy:'snippet'}}{% endraw %}</p>
+    </li>
+  </ul>
+
+<script>
+
+
+
+angular.module('phonecatApp', []).controller('PhoneListCtrl', function ($scope) {
+  $scope.phones = [
+    {'name': 'Nexs uS',
+     'snippet': 'Fast just got faster with Nexus S.'},{'name': 'Nexus S',
+     'snippet': 'Fast just got faster with Nexus S.'},
+    {'name': 'Motorola XOOM™ with Wi-Fi',
+     'snippet': 'The Next, Next Generation tablet.'},
+    {'name': 'MOTOROLA XOOM™',
+     'snippet': 'The Next, Next Generation tablet.'},
+     {'name': 'Nexus S',
+     'snippet': 'Fast just got faster with Nexus S.'},{'name': 'Nexus S',
+     'snippet': 'Fast just got faster with Nexus S.'},
+  ];
+});
+
+/*
+
+var app = angular.module('myApp', []);
+app.controller('customersCtrl', function($scope, $http) {
+	$scope.name = "dsfsdfsdf"
+
+    $http.get("http://127.0.0.1:5000/list")
+    .success(function(data,status) {$scope.names = data;
+    	
+    })
+
+    .error(function(err){
+    	$scope.errors = err;
+    });
+});*/
+</script>
+
+</body>
+</html>

@@ -154,41 +154,6 @@ def login():
 
 
 
-# mysql = MySQL()
-# conn = db.connect('localhost','root','srinath','hackerone')
-
-
-# class User(UserMixin, db.Model):
-
-#	 @property						 #stores the data from ddatabase
-#	 def password(self):
-#		 raise AttributeError('password is not a readable attribute')
-
-#	 @password.setter
-#	 def password(self, password):
-#		 self.password_hash = generate_password_hash(password)
-
-#	 def verify_password(self, password):
-#		 return check_password_hash(self.password_hash, password)
-
-#	 def __repr__(self):
-#		 return '<User %r>' % self.username
-
-#	 def generate_confirmation(self,expiration=3600):
-#	 	s = Serializer(current_app.config['SECRET_KEY'],expiration)
-#	 	return s.dumps({'confirm':self.id})
-
-#	 def confirm(self,token):
-#	 	s=Serializer(current_app['SECRET_KEY'])
-#	 	try:
-#	 		data = s.load(token)
-#	 	except Exception, e:
-#	 		return False
-		
-#	 	if data.get('confirm') != self.id :
-#	 		return False
-
-#	 	self.confirmed = True
 
 def find_user(user):
 	return User.query.filter_by(username=user).first()
@@ -201,10 +166,6 @@ def find_bugs(bugs):
 		
 @app.route('/auth',methods=['POST'])
 def auth():
-	print "asd"
-	print "fdsd"
-	print "jsngopf"
-	print request.form['username']
 	if request.method == 'POST':
 		print "ok1"
 		user = find_user(request.form['username'])
@@ -367,13 +328,64 @@ def bugs():
 	return render_template('bugs.html')
 
 
+from datetime import timedelta  
+from flask import make_response, request
+from functools import update_wrapper
+
+
+def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True, automatic_options=True):  
+    if methods is not None:
+        methods = ', '.join(sorted(x.upper() for x in methods))
+    if headers is not None and not isinstance(headers, basestring):
+        headers = ', '.join(x.upper() for x in headers)
+    if not isinstance(origin, basestring):
+        origin = ', '.join(origin)
+    if isinstance(max_age, timedelta):
+        max_age = max_age.total_seconds()
+
+    def get_methods():
+        if methods is not None:
+            return methods
+
+        options_resp = current_app.make_default_options_response()
+        return options_resp.headers['allow']
+
+    def decorator(f):
+        def wrapped_function(*args, **kwargs):
+            if automatic_options and request.method == 'OPTIONS':
+                resp = current_app.make_default_options_response()
+            else:
+                resp = make_response(f(*args, **kwargs))
+            if not attach_to_all and request.method != 'OPTIONS':
+                return resp
+
+            h = resp.headers
+
+            h['Access-Control-Allow-Origin'] = origin
+            h['Access-Control-Allow-Methods'] = get_methods()
+            h['Access-Control-Max-Age'] = str(max_age)
+            if headers is not None:
+                h['Access-Control-Allow-Headers'] = headers
+            return resp
+
+        f.provide_automatic_options = False
+        return update_wrapper(wrapped_function, f)
+    return decorator
+
+
+
+
+
+
+
 from flask import jsonify, Response
 import json
 
 @app.route('/list',methods=['POST','GET'])
+@crossdomain(origin='*')
 def list():
 	# if request.method=='POST':
-	user_id = 2 					#session['user_id']
+	user_id =1					#session['user_id']
 	bugs= Bugs.query.filter_by(user_id = user_id).all()
 	print "printing list \n\n\n"
 	# print json.dumps(user)
@@ -402,12 +414,6 @@ def list():
 	output = []
 	for bug in bugs:
 		row={}
-		i=0
-		# for field in Bugs.__table__.c:
-		# 	x = str(field).split(".")[1]
-		# 	row[x] = bugs.
-		# 	i = i+1
-		# 	print bugs[i]
 		row['resolved']=bug.resolved
 		row['money_transfered'] = bug.money_transfered
 		row['user_id'] = bug.user_id
@@ -427,12 +433,25 @@ def list():
 	print jsonify(data =output)
 	print "\n json dummping \n\n"
 	z = json.dumps(output)
+	print z
 	data = {'records':output}
 	print type(data)
-	return jsonify(data)
+	w = open("data.json",'w')
+	m = str(z)
+	w.write(m)
+	
+	w.close()
+	# return Response(z,content_type='appilcation/json')
 	# return jsonify(records=output)
+	return Response(z)
 
-
+from flask.ext.triangle import Triangle
+Triangle(app)
+@app.route("/json")
+def json_result():
+	response = make_response(render_template('json.html'))
+	response.headers['X-Parachutes'] = 'parachutes are cool'
+	return render_template("test.html")
 
 
 
