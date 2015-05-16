@@ -11,7 +11,7 @@ from flask.ext.migrate import Migrate, MigrateCommand
 
 from flask.ext.login import LoginManager, login_user, current_user, login_required
 
-from werkzeug.security import generate_password_hash, check_password_hash
+
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask.ext.sqlalchemy import SQLAlchemy
 import os
@@ -146,7 +146,7 @@ def login():
 
 			login_user(user)
 			
-			return redirect(request.args.get('next'))
+			return redirect(request.args.get('next') or url_for('list'))
 		flash('Invalid username or password.')
 		print "its none"
 	return render_template('login.html')
@@ -382,35 +382,11 @@ from flask import jsonify, Response
 import json
 
 @app.route('/list',methods=['POST','GET'])
-@crossdomain(origin='*')
+@crossdomain(origin='/list')
 def list():
-	# if request.method=='POST':
-	user_id =1					#session['user_id']
+	user_id =session['user_id']
 	bugs= Bugs.query.filter_by(user_id = user_id).all()
-	print "printing list \n\n\n"
-	# print json.dumps(user)
-	# print bugs
-	# print bugs.type
 	
-	# a =[]
-	# b=[]
-	# data = {'type':a,'company_id':b}
-	# results={}
-	# c=[]
-	# n = []
-
-	# for x in bugs:
-	# 	n.append({'type':x.type,'company_id':x.company_id})
-
-	# print n
-	# print "\n"
-	# n = jsonify(n)
-	# print n
-	# print "\n"
-	# f = {'records':n}
-	# print jsonify(f)
-	# return jsonify(data)
-	# return jsonify(f)
 	output = []
 	for bug in bugs:
 		row={}
@@ -426,23 +402,8 @@ def list():
 
 		output.append(row)
 
-	print type(output)
-	print "\n outing data"
-	print output
-
-	print jsonify(data =output)
-	print "\n json dummping \n\n"
 	z = json.dumps(output)
-	print z
-	data = {'records':output}
-	print type(data)
-	w = open("data.json",'w')
-	m = str(z)
-	w.write(m)
 	
-	w.close()
-	# return Response(z,content_type='appilcation/json')
-	# return jsonify(records=output)
 	return Response(z)
 
 from flask.ext.triangle import Triangle
@@ -451,7 +412,7 @@ Triangle(app)
 def json_result():
 	response = make_response(render_template('json.html'))
 	response.headers['X-Parachutes'] = 'parachutes are cool'
-	return render_template("test.html")
+	return make_response(render_template("test.html"))
 
 
 
