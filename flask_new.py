@@ -7,6 +7,7 @@ from flaskext.mysql import MySQL
 from flask import request
 from flask.ext.script import Manager,Shell
 from flask.ext.migrate import Migrate, MigrateCommand
+from werkzeug import secure_filename
 
 
 from flask.ext.login import LoginManager, login_user, current_user, login_required
@@ -146,7 +147,7 @@ def login():
 
 			login_user(user)
 			
-			return redirect(request.args.get('next') or url_for('list'))
+			return redirect(request.args.get('next') or url_for('json_result'))
 		flash('Invalid username or password.')
 		print "its none"
 	return render_template('login.html')
@@ -334,43 +335,43 @@ from functools import update_wrapper
 
 
 def crossdomain(origin=None, methods=None, headers=None, max_age=21600, attach_to_all=True, automatic_options=True):  
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-    if headers is not None and not isinstance(headers, basestring):
-        headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
-        origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
-        max_age = max_age.total_seconds()
+	if methods is not None:
+		methods = ', '.join(sorted(x.upper() for x in methods))
+	if headers is not None and not isinstance(headers, basestring):
+		headers = ', '.join(x.upper() for x in headers)
+	if not isinstance(origin, basestring):
+		origin = ', '.join(origin)
+	if isinstance(max_age, timedelta):
+		max_age = max_age.total_seconds()
 
-    def get_methods():
-        if methods is not None:
-            return methods
+	def get_methods():
+		if methods is not None:
+			return methods
 
-        options_resp = current_app.make_default_options_response()
-        return options_resp.headers['allow']
+		options_resp = current_app.make_default_options_response()
+		return options_resp.headers['allow']
 
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
-                resp = current_app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
-                return resp
+	def decorator(f):
+		def wrapped_function(*args, **kwargs):
+			if automatic_options and request.method == 'OPTIONS':
+				resp = current_app.make_default_options_response()
+			else:
+				resp = make_response(f(*args, **kwargs))
+			if not attach_to_all and request.method != 'OPTIONS':
+				return resp
 
-            h = resp.headers
+			h = resp.headers
 
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            return resp
+			h['Access-Control-Allow-Origin'] = origin
+			h['Access-Control-Allow-Methods'] = get_methods()
+			h['Access-Control-Max-Age'] = str(max_age)
+			if headers is not None:
+				h['Access-Control-Allow-Headers'] = headers
+			return resp
 
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-    return decorator
+		f.provide_automatic_options = False
+		return update_wrapper(wrapped_function, f)
+	return decorator
 
 
 
@@ -382,7 +383,7 @@ from flask import jsonify, Response
 import json
 
 @app.route('/list',methods=['POST','GET'])
-@crossdomain(origin='/list')
+@crossdomain(origin='*')
 def list():
 	user_id =session['user_id']
 	bugs= Bugs.query.filter_by(user_id = user_id).all()
@@ -416,11 +417,46 @@ def json_result():
 
 
 
+UPLOAD_FOLDER = 'uploads/'
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg','php','py'])
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+	return '.' in filename and \
+		   filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
+
+def change_name(filename):
+	filename = filename.rsplit('.', 1)[0]+"kkr." + filename.rsplit('.',1)[1]
+	return filename
+
+@app.route('/uploads', methods=['GET', 'POST'])
+def upload_file():
+	if request.method == 'POST':
+		file = request.files['file']
+		if file and allowed_file(file.filename):
+			filename = secure_filename(file.filename)
+			filename = change_name(filename)
+			print filename
+			print file
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+			return redirect(url_for('uploaded_file',filename=filename))
+	return '''
+	<!doctype html>
+	<title>Upload new File</title>
+	<h1>Upload new File</h1>
+	<form action="" method=post enctype=multipart/form-data>
+	  <p><input type=file name=file>
+		 <input type=submit value=Upload>
+	</form>
+	'''
 
 
 
+from flask import send_from_directory
 
-
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+	return send_from_directory(app.config['UPLOAD_FOLDER'],filename)
 
 
 

@@ -5,18 +5,24 @@
 </head>
 <body ng-controller="PhoneListCtrl">
 
+	<ul>
+		<li ng-repeat="name in names">
+			{{name.type |angular }}
+		</li>
+	</ul>
   <ul>
     <li ng-repeat="phone in phones">
       <span>{% raw %}{{phone.name |uppercase }}{% endraw %}</span>
-      <p>{% raw %}{{phone.snippet |orderBy:'snippet'}}{% endraw %}</p>
+      <p>{% raw %}{{phone.snippet }}{% endraw %}</p>
     </li>
   </ul>
+
 
 <script>
 
 
 
-angular.module('phonecatApp', []).controller('PhoneListCtrl', function ($scope) {
+angular.module('phonecatApp', []).controller('PhoneListCtrl', function ($scope,$http) {
   $scope.phones = [
     {'name': 'Nexs uS',
      'snippet': 'Fast just got faster with Nexus S.'},{'name': 'Nexus S',
@@ -29,7 +35,12 @@ angular.module('phonecatApp', []).controller('PhoneListCtrl', function ($scope) 
      'snippet': 'Fast just got faster with Nexus S.'},{'name': 'Nexus S',
      'snippet': 'Fast just got faster with Nexus S.'},
   ];
+      $http.get("http://127.0.0.1:5000/list")
+    .success(function(data,status) {$scope.names = data;
+    	console.log(data);
+    })
 });
+
 
 /*
 
